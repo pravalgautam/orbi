@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Session identity — hybrid: email/OAuth user id can live in `externalId` or add fields as you integrate a provider.
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Normalized lowercase email; unique when present (password auth).
+  email         String? @unique
+  passwordHash String?
+
+  displayName String?
+  bio         String?
+
+  wallets Wallet[]
+  posts   Post[]
+  following Follow[] @relation("UserFollows")
+  followers Follow[] @relation("UserFollowedBy")
+}
+
+/// Linked wallet — verify via signed message before setting verifiedAt.
+model Wallet {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  address    String
+  chainId    Int       @default(1)
+  verifiedAt DateTime?
+
+  @@unique([address, chainId])
+}
+
+model Follow {
+  id          String @id @default(cuid())
+  followerId  String
+  followingId String
+  follower    User   @relation("UserFollows", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User   @relation("UserFollowedBy", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+}
+
+/// Off-chain feed — store content or pointer; IPFS CID + hash optional.
+model Post {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  body      String?
+  mediaCid  String?
+  mediaHash String?
+
+  /// moderation: hide without delete for appeals
+  hidden    Boolean @default(false)
+}
