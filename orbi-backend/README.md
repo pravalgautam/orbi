@@ -22,6 +22,7 @@ See **`docs/ARCHITECTURE.md`** for how this repo maps those ideas to code paths 
 ```bash
 cd "/Users/praval/Desktop/Orbi backend"
 cp .env.example .env
+# In `.env`, set `JWT_SECRET` to a string of at least 16 characters (e.g. `openssl rand -hex 32`).
 docker compose up -d postgres
 # .env.example DATABASE_URL matches docker-compose defaults
 
